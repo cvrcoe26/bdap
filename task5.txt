@@ -1,0 +1,176 @@
+sales_order.csv
+
+order_id,customer_id,product_id,order_date,order_amount,quantity,discount,tax,total_amount
+1,101,201,2024-01-05 10:30:00,1000.0,2,50.0,90.0,1040.0
+2,102,202,2024-01-10 14:15:00,500.0,1,25.0,45.0,520.0
+3,103,203,2024-02-12 16:20:00,1500.0,3,75.0,135.0,1560.0
+4,101,202,2024-03-15 11:45:00,500.0,1,0.0,50.0,550.0
+5,104,204,2024-04-05 09:30:00,2000.0,4,100.0,180.0,2080.0
+6,102,201,2024-05-22 17:05:00,1000.0,2,50.0,90.0,1040.0
+
+product.csv
+
+product_id,product_name,category,price,manufacturer,date_added
+201,Laptop,Electronics,500.0,Dell,2023-11-01 10:00:00
+202,Smartphone,Electronics,500.0,Samsung,2023-11-10 11:00:00
+203,Printer,Electronics,500.0,HP,2023-12-05 15:00:00
+204,Office Chair,Furniture,500.0,Ikea,2023-12-12 12:00:00
+
+customer.csv
+
+customer_id,customer_name,email,phone,address,date_joined,country,state
+101,Alice Smith,alice@example.com,1234567890,"{""street"":""123 Main St"",""city"":""New
+York"",""state"":""NY"",""zip"":10001}",2023-06-15 09:00:00,USA,NY
+102,Bob Johnson,bob@example.com,2345678901,"{""street"":""456 Elm St"",""city"":""Los
+Angeles"",""state"":""CA"",""zip"":90001}",2023-07-01 10:00:00,USA,CA
+103,Charlie Lee,charlie@example.com,3456789012,"{""street"":""789 Oak
+St"",""city"":""Chicago"",""state"":""IL"",""zip"":60007}",2023-07-10 11:00:00,USA,IL
+104,David Kim,david@example.com,4567890123,"{""street"":""101 Maple Ave"",""city"":""San
+Francisco"",""state"":""CA"",""zip"":94101}",2023-08-05 12:00:00,USA,CA
+
+
+Save these as three files:
+sales_order.csv
+product.csv
+customer.csv
+
+----------------Create Hive Tables-------------
+
+CREATE TABLE sales_order (
+ order_id INT,
+ customer_id INT,
+ product_id INT,
+ order_date TIMESTAMP,
+ order_amount DOUBLE,
+ quantity INT,
+ discount DOUBLE,
+ tax DOUBLE,
+ total_amount DOUBLE
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+
+CREATE TABLE product (
+ product_id INT,
+ product_name STRING,
+ category STRING,
+ price DOUBLE,
+ manufacturer STRING,
+ date_added TIMESTAMP
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+
+CREATE TABLE customer (
+ customer_id INT,
+ customer_name STRING,
+ email STRING,
+ phone STRING,
+ address STRUCT<street: STRING, city: STRING, state: STRING, zip: INT>,
+ date_joined TIMESTAMP
+)
+PARTITIONED BY (country STRING, state STRING)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+COLLECTION ITEMS TERMINATED BY '|'
+MAP KEYS TERMINATED BY ':'
+STORED AS TEXTFILE;
+
+
+----------------Load Data into Hive Tables---------------
+hdfs dfs -mkdir -p /user/hive/data/
+hdfs dfs -put sales_order.csv /user/hive/data/
+hdfs dfs -put product.csv /user/hive/data/
+hdfs dfs -put customer.csv /user/hive/data/
+
+
+LOAD DATA INPATH '/user/hive/data/sales_order.csv' INTO TABLE sales_order;
+LOAD DATA INPATH '/user/hive/data/product.csv' INTO TABLE product;
+
+SET hive.exec.dynamic.partition = true;
+SET hive.exec.dynamic.partition.mode = nonstrict;
+
+
+CREATE TABLE customer_stage (
+ customer_id INT,
+ customer_name STRING,
+ email STRING,
+ phone STRING,
+ address STRING,
+ date_joined TIMESTAMP,
+ country STRING,
+ state STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+LOAD DATA INPATH '/user/hive/data/customer.csv' INTO TABLE customer_stage;
+
+INSERT INTO TABLE customer PARTITION (country, state)
+SELECT
+ customer_id,
+ customer_name,
+ email,
+ phone,
+ named_struct(
+ 'street', regexp_extract(address, '"street":"([^"]+)"', 1),
+ 'city', regexp_extract(address, '"city":"([^"]+)"', 1),
+ 'state', regexp_extract(address, '"state":"([^"]+)"', 1),
+ 'zip', cast(regexp_extract(address, '"zip":([0-9]+)', 1) AS INT)
+ ),
+ date_joined,
+ country,
+ state
+FROM customer_stage;
+
+-----------1st ques(Total Sales Amount) ---------------
+
+SELECT SUM(total_amount) AS total_sales_amount FROM sales_order;
+
+---------------2nd ques(Top N Products by Sales)------------
+Replace N with any number (e.g., 3)
+
+SELECT p.product_name, SUM(s.total_amount) AS total_sales
+FROM sales_order s
+JOIN product p ON s.product_id = p.product_id
+GROUP BY p.product_name
+ORDER BY total_sales DESC
+LIMIT 3;
+
+
+------------3rd ques(Customer-wise Sales)--------------
+SELECT c.customer_name, SUM(s.total_amount) AS total_sales
+FROM sales_order s
+JOIN customer c ON s.customer_id = c.customer_id
+GROUP BY c.customer_name;
+
+
+-----------4th ques(Monthly Sales Trends)----------------
+SELECT
+ date_format(order_date, 'yyyy-MM') AS month,
+ SUM(total_amount) AS monthly_sales
+FROM sales_order
+GROUP BY date_format(order_date, 'yyyy-MM')
+ORDER BY month;
+
+
+--------------5th ques(Product-wise Quantity Sold)----------
+SELECT p.product_name, SUM(s.quantity) AS total_quantity_sold
+FROM sales_order s
+JOIN product p ON s.product_id = p.product_id
+GROUP BY p.product_name;
+
+
+--------------6th ques(Highest-Priced Product in Each Category)-------------
+SELECT category, product_name, price
+FROM (
+  SELECT *,
+ ROW_NUMBER() OVER (PARTITION BY category ORDER BY price DESC) AS rnk
+ FROM product
+) t
+WHERE rnk = 1;
+
