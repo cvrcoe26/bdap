@@ -1,0 +1,90 @@
+------------1st ques(Create employee_details HBase Table)----------
+
+create 'employee_details', 'PersonalInfo', 'ProfessionalInfo'
+
+-------------2nd ques(Insert 10 Records into employee_details Table)----------
+put 'employee_details', 'emp1', 'PersonalInfo:name', 'Alice'
+put 'employee_details', 'emp1', 'PersonalInfo:age', '30'
+put 'employee_details', 'emp1', 'PersonalInfo:gender', 'F'
+put 'employee_details', 'emp1', 'ProfessionalInfo:designation', 'Engineer'
+put 'employee_details', 'emp1', 'ProfessionalInfo:salary', '70000'
+put 'employee_details', 'emp1', 'ProfessionalInfo:department', 'Development'
+
+put 'employee_details', 'emp2', 'PersonalInfo:name', 'Bob'
+put 'employee_details', 'emp2', 'PersonalInfo:age', '34'
+put 'employee_details', 'emp2', 'PersonalInfo:gender', 'M'
+put 'employee_details', 'emp2', 'ProfessionalInfo:designation', 'Manager'
+put 'employee_details', 'emp2', 'ProfessionalInfo:salary', '90000'
+put 'employee_details', 'emp2', 'ProfessionalInfo:department', 'Sales'
+
+put 'employee_details', 'emp3', 'PersonalInfo:name', 'Charlie'
+put 'employee_details', 'emp3', 'PersonalInfo:age', '28'
+put 'employee_details', 'emp3', 'PersonalInfo:gender', 'M'
+put 'employee_details', 'emp3', 'ProfessionalInfo:designation', 'Analyst'
+put 'employee_details', 'emp3', 'ProfessionalInfo:salary', '65000'
+put 'employee_details', 'emp3', 'ProfessionalInfo:department', 'Marketing'
+
+put 'employee_details', 'emp4', 'PersonalInfo:name', 'Diana'
+put 'employee_details', 'emp4', 'PersonalInfo:age', '26'
+put 'employee_details', 'emp4', 'PersonalInfo:gender', 'F'
+put 'employee_details', 'emp4', 'ProfessionalInfo:designation', 'Developer'
+put 'employee_details', 'emp4', 'ProfessionalInfo:salary', '72000'
+put 'employee_details', 'emp4', 'ProfessionalInfo:department', 'IT'
+
+put 'employee_details', 'emp5', 'PersonalInfo:name', 'Ethan'
+put 'employee_details', 'emp5', 'PersonalInfo:age', '32'
+put 'employee_details', 'emp5', 'PersonalInfo:gender', 'M'
+put 'employee_details', 'emp5', 'ProfessionalInfo:designation', 'Consultant'
+put 'employee_details', 'emp5', 'ProfessionalInfo:salary', '85000'
+put 'employee_details', 'emp5', 'ProfessionalInfo:department', 'Finance'
+
+put 'employee_details', 'emp6', 'PersonalInfo:name', 'Fiona'
+put 'employee_details', 'emp6', 'PersonalInfo:age', '27'
+put 'employee_details', 'emp6', 'PersonalInfo:gender', 'F'
+put 'employee_details', 'emp6', 'ProfessionalInfo:designation', 'Designer'
+put 'employee_details', 'emp6', 'ProfessionalInfo:salary', '68000'
+put 'employee_details', 'emp6', 'ProfessionalInfo:department', 'UI/UX'
+
+put 'employee_details', 'emp7', 'PersonalInfo:name', 'George'
+put 'employee_details', 'emp7', 'PersonalInfo:age', '31'
+put 'employee_details', 'emp7', 'PersonalInfo:gender', 'M'
+put 'employee_details', 'emp7', 'ProfessionalInfo:designation', 'Engineer'
+put 'employee_details', 'emp7', 'ProfessionalInfo:salary', '70000'
+put 'employee_details', 'emp7', 'ProfessionalInfo:department', 'Development'
+
+put 'employee_details', 'emp8', 'PersonalInfo:name', 'Helen'
+put 'employee_details', 'emp8', 'PersonalInfo:age', '29'
+put 'employee_details', 'emp8', 'PersonalInfo:gender', 'F'
+put 'employee_details', 'emp8', 'ProfessionalInfo:designation', 'HR Executive'
+put 'employee_details', 'emp8', 'ProfessionalInfo:salary', '60000'
+put 'employee_details', 'emp8', 'ProfessionalInfo:department', 'HR'
+
+put 'employee_details', 'emp9', 'PersonalInfo:name', 'Ian'
+put 'employee_details', 'emp9', 'PersonalInfo:age', '33'
+put 'employee_details', 'emp9', 'PersonalInfo:gender', 'M'
+put 'employee_details', 'emp9', 'ProfessionalInfo:designation', 'Tester'
+put 'employee_details', 'emp9', 'ProfessionalInfo:salary', '64000'
+put 'employee_details', 'emp9', 'ProfessionalInfo:department', 'QA'
+
+put 'employee_details', 'emp10', 'PersonalInfo:name', 'Jane'
+put 'employee_details', 'emp10', 'PersonalInfo:age', '30'
+put 'employee_details', 'emp10', 'PersonalInfo:gender', 'F'
+put 'employee_details', 'emp10', 'ProfessionalInfo:designation', 'Lead Engineer'
+put 'employee_details', 'emp10', 'ProfessionalInfo:salary', '95000'
+put 'employee_details', 'emp10', 'ProfessionalInfo:department', 'R&D'
+
+
+
+
+-------3rd ques(Display Details of an Employee with a Specific Name)-----------
+scan 'employee_details', {
+  FILTER => "SingleColumnValueFilter('PersonalInfo', 'name', =, 'binary:Alice')"
+}
+
+
+--------4th ques(Update the Salary of an Employee with a Specific Name)-----------
+put 'employee_details', 'emp1', 'ProfessionalInfo:salary', '75000'
+
+
+---------5th ques(Delete the Record of an Employee with a Specific Name)------------
+deleteall 'employee_details', 'emp1'
