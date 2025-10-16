@@ -1,0 +1,36 @@
+Step 1: Create HBase Table:
+create 'employee', 'info'
+
+
+Step 2: Create Hive Table Mapped to HBase
+CREATE EXTERNAL TABLE hive_employee (
+ key STRING,
+ name STRING,
+ age STRING,
+ department STRING
+)
+STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+WITH SERDEPROPERTIES (
+ "hbase.columns.mapping" = ":key,info:name,info:age,info:department"
+)
+TBLPROPERTIES (
+ "hbase.table.name" = "employee"
+);
+
+
+Step 3: Insert Data from Hive
+INSERT INTO TABLE hive_employee VALUES
+("emp1", "John", "30", "IT"),
+("emp2", "Alice", "28", "HR"),
+("emp3", "Bob", "35", "Finance");
+
+
+Step 4: Verify Data in HBase
+scan 'employee'
+
+
+Step 5: Insert in HBase and Read from Hive
+put 'employee', 'emp4', 'info:name', 'David'
+put 'employee', 'emp4', 'info:age', '26'
+put 'employee', 'emp4', 'info:department', 'Marketing'
+SELECT * FROM hive_employee WHERE key = 'emp4';
