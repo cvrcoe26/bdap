@@ -1,0 +1,55 @@
+1. Create a employees Table and insert some data: 
+
+CREATE TABLE employees ( id INT, name STRING ) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE; 
+
+INSERT INTO employees VALUES (1, 'john doe'), (2, 'jane smith'), (3, 'alice johnson'); 
+
+2. Create a Hive UDF  
+
+Step 1: Write the UDF in Java Create a Java class `CapitalizeUDF.java`:  
+
+import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.io.Text;
+public class CapitalizeUDF extends UDF
+{
+    public Text evaluate(Text input)
+    {
+        if (input == null)
+        {
+            return null;
+        }
+        String[] words = input.toString().split(" ");
+        StringBuilder capitalized = new StringBuilder();
+        for (String word: words)
+        {
+            if (word.length() > 0)
+            {
+                capitalized.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1).toLowerCase()).append(" ");
+            }
+        }
+        return new Text(capitalized.toString().trim());
+    }
+}
+
+
+Step 3: Compile and create JAR file:  
+
+$ javac –cp /usr/lib/hive/lib/hive-exec.jar:/usr/lib/hadoop/* CapitalizeUDF.java  
+
+$ jar -cf CapitalizeUDF.jar CapitalizeUDF.class 
+
+Step 4: Add the JAR to Hive and Register the UDF:  
+
+hive> ADD JAR /home/cloudera/CapitalizeUDF.jar; 
+
+Create a temporary function to register the UDF  
+
+hive> CREATE TEMPORARY FUNCTION capitalize AS 'CapitalizeUDF'; 
+
+Step 5:  Use the UDF to Manipulate Data in the Hive Table 
+
+SELECT id, capitalize(name) AS capitalized_name FROM employees; 
+
+The output will display the names with the first letter of each word capitalized: 
+
+ 
