@@ -1,0 +1,32 @@
+open a new notebook in the google colab and create new cells with the below content (add each block to a new cell) and run the cells one by one
+
+
+!wget -q https://downloads.apache.org/kafka/3.9.0/kafka_2.13-3.9.0.tgz
+!tar -xzf kafka_2.13-3.9.0.tgz
+
+
+!/content/kafka_2.13-3.9.0/bin/zookeeper-server-start.sh -daemon \
+    /content/kafka_2.13-3.9.0/config/zookeeper.properties
+
+
+!/content/kafka_2.13-3.9.0/bin/kafka-server-start.sh -daemon \
+    /content/kafka_2.13-3.9.0/config/server.properties
+
+
+!sleep 10
+
+
+!./kafka_2.13-3.9.0/bin/kafka-topics.sh --create \
+    --bootstrap-server 127.0.0.1:9092 \
+    --replication-factor 1 --partitions 1 \
+    --topic test-topic
+
+
+!echo "Hello Kafka4!" | \
+    ./kafka_2.13-3.9.0/bin/kafka-console-producer.sh \
+    --topic test-topic --bootstrap-server 127.0.0.1:9092
+
+
+!./kafka_2.13-3.9.0/bin/kafka-console-consumer.sh \
+    --topic test-topic --from-beginning \
+    --bootstrap-server 127.0.0.1:9092
