@@ -1,0 +1,67 @@
+Open three terminal windows and label them as:
+sqoop
+mysql
+hdfs
+
+--------Importing Data from MySQL to HDFS----
+MySQL Terminal:
+Step 1: Connect to MySQL:
+$ mysql -u root -p
+Enter password: cloudera
+Step 2: Create a database:
+mysql> CREATE DATABASE emp_info;
+Step 3: Use the database:
+mysql> USE emp_info;
+Step 4: Create a table emp1:
+mysql> CREATE TABLE emp1 (empid INT PRIMARY KEY, ename VARCHAR(10), sal FLOAT);
+Step 5: Insert data into emp1:
+mysql> INSERT INTO emp1 VALUES (101, 'smith', 12000), (102, 'scott', 13000);
+Sqoop Terminal:
+Run the following command to import the MySQL table into HDFS:
+$ sqoop import \
+  --connect jdbc:mysql://localhost/emp_info \
+  --username root \
+  --password cloudera \
+  --table emp1 \
+  --target-dir /Test2 \
+  --num-mappers 1
+HDFS Terminal:
+Verify the imported data:
+$ hdfs dfs -cat /Test2/part-m-00000
+Expected Output:
+101,smith,12000
+102,scott,13000
+
+------------Exporting Data from HDFS to MySQL---------------
+MySQL Terminal:
+Step 1: Create a new empty table emp2:
+mysql> CREATE TABLE emp2 (empid INT PRIMARY KEY, ename VARCHAR(10), sal FLOAT);
+HDFS Terminal:
+Step 2: Create a local file emp2.csv with the following content:
+101,A,12000
+102,B,13000
+103,C,15000
+Step 3: Upload the file to HDFS:
+$ hdfs dfs -put emp2.csv /Test2
+Step 4: Verify the upload:
+$ hdfs dfs -cat /Test2/emp2.csv
+Sqoop Terminal:
+Run the export command:
+$ sqoop export \
+  --connect jdbc:mysql://localhost/emp_info \
+  --username root \
+  --password cloudera \
+  --table emp2 \
+  --export-dir /Test2/emp2.csv \
+  --input-fields-terminated-by ','
+MySQL Terminal:
+Check the exported data:
+mysql> SELECT * FROM emp2;
+Expected Output:
+101	A	12000
+102	B	13000
+103	C	15000
+
+
+
+-
