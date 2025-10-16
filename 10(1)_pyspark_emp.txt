@@ -1,0 +1,51 @@
+open a new notebook in the google colab and paste the below code and run the cell
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import avg, col, round, current_date, datediff, year, when
+
+
+spark = SparkSession.builder.appName("EmployeeDataAnalysis").getOrCreate()
+
+
+df = spark.read.csv("employees.csv", header=True, inferSchema=True)
+
+
+print("Original Data:")
+df.show()
+
+
+#1st sub question
+avg_salary_df = df.groupBy("Department_id").agg(round(avg("Salary"), 2).alias("Avg_Salary"))
+print("Average Salary per Department:")
+avg_salary_df.show()
+
+
+df = df.join(avg_salary_df, on="Department_id", how="left")
+df.show()
+
+
+#2nd sub question
+df = df.withColumn(
+    "Salary_Increase(%)",
+    round(((col("Salary") - col("Avg_Salary")) / col("Avg_Salary")) * 100, 2)
+)
+df.show()
+
+
+#3rd sub question
+df1 = df1.withColumn(
+    "YearswithCompany",
+    round(datediff(current_date(), col("DOJ")) / 365, 0)
+)
+df1.show()
+
+
+# 4th sub question
+df1 = df1.withColumn(
+    "Salary_Category",
+    when(col("Salary") < 4000, "Low") \
+    .when((col("Salary") >= 4000) & (col("Salary") < 10000), "Medium") \
+    .otherwise("High")
+)
+print("Final DataFrame with all transformations:")
+df1.show(truncate=False)
