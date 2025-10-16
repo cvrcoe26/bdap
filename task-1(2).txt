@@ -1,0 +1,37 @@
+-------1st ques (Copy Files to HDFS)----------
+hdfs dfs -copyFromLocal /home/user/data.txt /user/hadoop/
+
+
+-------2nd ques (Copy Files from HDFS)----------
+hdfs dfs -copyToLocal /user/hadoop/data.txt /home/user/
+
+
+-------3rd ques (List the directories and files in HDFS)----------
+hdfs dfs -ls /user/hadoop/
+
+-------4th ques (Display the contents of file in HDFS)----------
+hdfs dfs -cat /user/hadoop/data.txt
+
+
+-------5th ques (Create a directory in HDFS)----------
+hdfs dfs -mkdir /user/hadoop/newdir
+
+
+-------6th ques (Remove a directory/file in HDFS)----------
+hdfs dfs -rm /user/hadoop/data.txt
+hdfs dfs -rm -r /user/hadoop/newdir
+
+
+-------7th ques (Count the number of files in HDFS)----------
+hdfs dfs -count /user/hadoop/
+
+
+-------8th ques (Merge files in HDFS)----------
+hdfs dfs -getmerge /user/hadoop/input/ /user/hadoop/merged.txt
+
+-------9th ques (Concatenate two files and store them in HDFS)----------
+hdfs dfs -cat /user/hadoop/file1.txt /user/hadoop/file2.txt | hdfs dfs -put - /user/hadoop/combined.txt
+
+
+-------10th ques (Find the checksum of the file in HDFS)----------
+hdfs dfs -checksum /user/hadoop/data.txt
