@@ -1,0 +1,454 @@
+
+1. Spark Streaming word count program with Socket Stream 
+
+spark-socket-stream.py 
+
+ 
+
+from pyspark import SparkContext 
+
+from pyspark.streaming import StreamingContext 
+
+ 
+
+# Create SparkContext 
+
+sc = SparkContext(master="local[2]", appName="SocketStreaming") 
+
+ 
+
+# Set log level to WARN to reduce logs 
+
+sc.setLogLevel("WARN") 
+
+ 
+
+# Create StreamingContext with 5-second batch interval 
+
+ssc = StreamingContext(sc, 5) 
+
+ 
+
+# Create a DStream that connects to hostname:port, e.g., localhost:9999 
+
+lines = ssc.socketTextStream("localhost", 9999) 
+
+ 
+
+# Split each line into words 
+
+words = lines.flatMap(lambda line: line.split()) 
+
+ 
+
+# Map each word to (word, 1) 
+
+pairs = words.map(lambda word: (word, 1)) 
+
+ 
+
+# Reduce by key to get word counts 
+
+word_counts = pairs.reduceByKey(lambda a, b: a + b) 
+
+ 
+
+# Print results 
+
+word_counts.pprint() 
+
+ 
+
+# Start streaming 
+
+ssc.start() 
+
+ 
+
+# Wait for the streaming to finish 
+
+ssc.awaitTermination() 
+
+ 
+
+How to run: 
+
+ 
+
+Open Terminal window, name it as Socket Server: 
+
+Start the socket server: 
+
+ 
+
+nc -lk 9999 
+
+ 
+
+Type text into the nc terminal and watch Spark print word counts every 5 seconds 
+
+Open another Terminal window, name it as Spark: 
+
+ 
+
+Run your Spark streaming job: 
+
+ 
+
+spark-submit spark-socket-stream.py 
+
+ 
+
+2. Spark Streaming Word Count with File Stream 
+
+Spark-file-stream.py 
+
+from pyspark import SparkContext 
+
+from pyspark.streaming import StreamingContext 
+
+ 
+
+# Create SparkContext 
+
+sc = SparkContext(master="local[2]", appName="FileStreaming") 
+
+ 
+
+# Reduce logs 
+
+sc.setLogLevel("WARN") 
+
+ 
+
+# Create StreamingContext with 5-second batch interval 
+
+ssc = StreamingContext(sc, 5) 
+
+ 
+
+# Monitor a directory for new text files 
+
+# Replace "/path/to/input_dir" with your directory path 
+
+lines = ssc.textFileStream("/path/to/input_dir") 
+
+ 
+
+# Split each line into words 
+
+words = lines.flatMap(lambda line: line.split()) 
+
+ 
+
+# Map each word to (word, 1) 
+
+pairs = words.map(lambda word: (word, 1)) 
+
+ 
+
+# Reduce by key to count words 
+
+word_counts = pairs.reduceByKey(lambda a, b: a + b) 
+
+ 
+
+# Print results to console 
+
+word_counts.pprint() 
+
+ 
+
+# Start streaming 
+
+ssc.start() 
+
+ 
+
+# Wait for the streaming to finish 
+
+ssc.awaitTermination() 
+
+ 
+
+open terminal window,name it as File Stream 
+
+ 
+
+In HDFS DFS: 
+
+hdfs dfs –mkdir  /user/task11 
+
+cat > file.txt 
+
+spark python program 
+
+ctrl+D 
+
+hdfs dfs -put /home/clouera/file.tx /user/task11 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+3. Real-Time Sentiment Analysis on Reviews 
+
+We classify each review as POSITIVE or NEGATIVE based on a customer feedback. 
+
+sentiment_analysis.py 
+
+from pyspark import SparkContext 
+
+from pyspark.streaming import StreamingContext 
+
+ 
+
+# Create SparkContext 
+
+sc = SparkContext(master="local[2]", appName="SentimentAnalysis") 
+
+sc.setLogLevel("WARN") 
+
+ 
+
+# Create StreamingContext with 5-second batch interval 
+
+ssc = StreamingContext(sc, 5) 
+
+ 
+
+# Positive & Negative word lists 
+
+positive_words = {"good", "great", "excellent", "love", "awesome", "best"} 
+
+negative_words = {"bad", "worst", "hate", "poor", "awful", "terrible"} 
+
+ 
+
+# Socket stream for reviews 
+
+lines = ssc.socketTextStream("localhost", 9998) 
+
+ 
+
+# Function to classify sentiment 
+
+def classify_review(review): 
+
+    review_lower = review.lower() 
+
+    pos_count = sum(1 for w in positive_words if w in review_lower) 
+
+    neg_count = sum(1 for w in negative_words if w in review_lower) 
+
+    if pos_count > neg_count: 
+
+        return ("POSITIVE", 1) 
+
+    elif neg_count > pos_count: 
+
+        return ("NEGATIVE", 1) 
+
+    else: 
+
+        return ("NEUTRAL", 1) 
+
+ 
+
+# Classify each review 
+
+sentiments = lines.map(classify_review) 
+
+ 
+
+# Count reviews by sentiment in each batch 
+
+sentiment_counts = sentiments.reduceByKey(lambda a, b: a + b) 
+
+ 
+
+# Print results 
+
+sentiment_counts.pprint() 
+
+ 
+
+# Start streaming 
+
+ssc.start() 
+
+ssc.awaitTermination() 
+
+ 
+
+ 
+
+How to run: 
+
+Start a socket server 
+
+Open terminal name it as “socket-stream-sentiment” 
+
+nc -lk 9998   
+
+Product A is awesome 
+
+Product B is bad 
+
+I love this 
+
+Worst service ever 
+
+Open another terminal name it as “Spark” 
+
+Run Spark job: 
+
+spark-submit sentiment_analysis.py 
+
+Expected Output: 
+
+("POSITIVE", 5) 
+
+("NEGATIVE", 2) 
+
+ 
+
+4. Real-Time Fraud Detection on Transactions 
+
+Transactions are streamed via socket, If the amount > 1000, raise an alert. 
+
+fraud_detection.py 
+
+from pyspark import SparkContext 
+
+from pyspark.streaming import StreamingContext 
+
+ 
+
+# Create SparkContext 
+
+sc = SparkContext(master="local[2]", appName="FraudDetection") 
+
+sc.setLogLevel("WARN") 
+
+ 
+
+# Create StreamingContext with 5-second batch interval 
+
+ssc = StreamingContext(sc, 5) 
+
+ 
+
+# Create socket stream (replace host/port if needed) 
+
+lines = ssc.socketTextStream("localhost", 9999) 
+
+ 
+
+# Parse transactions (txnId, userId, amount) 
+
+def parse_txn(line): 
+
+    try: 
+
+        txn_id, user_id, amount = line.split(",") 
+
+        return (txn_id, user_id, float(amount)) 
+
+    except: 
+
+        return None 
+
+ 
+
+transactions = lines.map(parse_txn).filter(lambda x: x is not None) 
+
+ 
+
+# Filter high-value transactions 
+
+alerts = transactions.filter(lambda t: t[2] > 1000) 
+
+ 
+
+# Print alerts 
+
+alerts.foreachRDD(lambda rdd: rdd.foreach(lambda t: print( 
+
+    f"ALERT : High-value transaction {t[0]} by {t[1]} → ${t[2]}" 
+
+))) 
+
+ 
+
+# Start streaming 
+
+ssc.start() 
+
+ssc.awaitTermination() 
+
+ 
+
+Type messages into the socket terminal: 
+
+Start a socket server 
+
+nc -lk 9999 
+
+txn101,user1,500 
+
+txn102,user2,2000 
+
+txn103,user3,1500 
+
+ 
+
+Run Spark job: 
+
+open spark terminal:  
+
+spark-submit fraud_detection.py 
+
+ 
+
+ 
+
+5. Real-Time Sensor Data Analysis 
+
+Scenario: IoT temperature sensor readings. 
+
+Input:  Messages to socket: 
+
+{"sensor":"A1", "temp":22.5} 
+
+{"sensor":"A2", "temp":30.1} 
+
+{"sensor":"A1", "temp":23.0} 
+
+Compute average temperature per sensor every 20 seconds. 
+
+Expected Output Example: 
+
+("A1", 22.75) 
+
+   ("A2", 30.1) 
+
+ 
