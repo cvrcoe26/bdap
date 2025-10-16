@@ -1,0 +1,122 @@
+from pyspark.sql import SparkSession
+from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.regression import LinearRegression
+from pyspark.ml.evaluation import RegressionEvaluator
+
+
+spark = SparkSession.builder.appName("BostonHousingLR").getOrCreate()
+
+
+data = spark.read.csv("/content/BostonHousing.csv", header=True, inferSchema=True)
+
+data.show()
+
+
+print("Schema:")
+data.printSchema()
+
+
+data = data.drop("CAT. MEDV")
+data.show()
+
+
+feature_cols = [c for c in data.columns if c != "MEDV"]
+print(feature_cols)
+
+
+assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
+final_data = assembler.transform(data).select("features", "MEDV")
+
+
+train_data, test_data = final_data.randomSplit([0.8, 0.2], seed=42)
+
+
+lr = LinearRegression(featuresCol="features", labelCol="MEDV")
+lr_model = lr.fit(train_data)
+
+
+predictions = lr_model.transform(test_data)
+predictions.select("features", "MEDV", "prediction").show(5)
+
+
+evaluator = RegressionEvaluator(labelCol="MEDV", predictionCol="prediction", metricName="rmse")
+rmse = evaluator.evaluate(predictions)
+r2 = lr_model.summary.r2
+print(f"Root Mean Squared Error (RMSE): {rmse}")
+print(f"R² on training data: {r2}")
+
+
+import math
+import pandas as pd
+
+# ---------------------------------------
+# 1. Dataset (Play Tennis Example)
+# ---------------------------------------
+data = {
+    'Outlook': ['Sunny', 'Sunny', 'Overcast', 'Rain', 'Rain', 'Rain', 'Overcast', 'Sunny',
+                'Sunny', 'Rain', 'Sunny', 'Overcast', 'Overcast', 'Rain'],
+    'Temperature': ['Hot', 'Hot', 'Hot', 'Mild', 'Cool', 'Cool', 'Cool', 'Mild',
+                    'Cool', 'Mild', 'Mild', 'Mild', 'Hot', 'Mild'],
+    'Humidity': ['High', 'High', 'High', 'High', 'Normal', 'Normal', 'Normal', 'High',
+                 'Normal', 'Normal', 'Normal', 'High', 'Normal', 'High'],
+    'Wind': ['Weak', 'Strong', 'Weak', 'Weak', 'Weak', 'Strong', 'Strong', 'Weak',
+             'Weak', 'Weak', 'Strong', 'Strong', 'Weak', 'Strong'],
+    'PlayTennis': ['No', 'No', 'Yes', 'Yes', 'Yes', 'No', 'Yes', 'No',
+                   'Yes', 'Yes', 'Yes', 'Yes', 'Yes', 'No']
+}
+df = pd.DataFrame(data)
+
+# ---------------------------------------
+# 2. ID3 Algorithm (Entropy + Information Gain)
+# ---------------------------------------
+def entropy(target_col):
+    elements, counts = zip(*df[target_col].value_counts().items())
+    entropy_val = sum([(-counts[i]/sum(counts)) * math.log2(counts[i]/sum(counts)) for i in range(len(elements))])
+    return entropy_val
+
+def info_gain(data, split_attr, target="PlayTennis"):
+    total_entropy = entropy(target)
+    vals, counts = zip(*data[split_attr].value_counts().items())
+    weighted_entropy = sum([(counts[i]/sum(counts)) * entropy(target) for i in range(len(vals))])
+    return total_entropy - weighted_entropy
+
+# ---------------------------------------
+# 3. Build Tree Recursively
+# ---------------------------------------
+def id3(data, originaldata, features, target="PlayTennis", parent_node_class=None):
+    # Stopping conditions
+    if len(set(data[target])) <= 1:
+        return list(data[target])[0]
+    elif len(data) == 0:
+        return parent_node_class
+    elif len(features) == 0:
+        return data[target].mode()[0]
+    else:
+        parent_node_class = data[target].mode()[0]
+        gains = [info_gain(data, f, target) for f in features]
+        best_feat = features[gains.index(max(gains))]
+        tree = {best_feat: {}}
+        for val in data[best_feat].unique():
+            sub_data = data.where(data[best_feat] == val).dropna()
+            subtree = id3(sub_data, df, [f for f in features if f != best_feat], target, parent_node_class)
+            tree[best_feat][val] = subtree
+        return tree
+
+tree = id3(df, df, df.columns[:-1].tolist())
+print("Decision Tree:", tree)
+
+# ---------------------------------------
+# 4. Classify a New Sample
+# ---------------------------------------
+def classify(sample, tree):
+    for attr, branches in tree.items():
+        value = sample.get(attr)
+        if value in branches:
+            if isinstance(branches[value], dict):
+                return classify(sample, branches[value])
+            else:
+                return branches[value]
+    return None
+
+test_sample = {'Outlook': 'Sunny', 'Temperature': 'Cool', 'Humidity': 'High', 'Wind': 'Strong'}
+print("Predicted Class:", classify(test_sample, tree))
