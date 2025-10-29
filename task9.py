@@ -1,35 +1,23 @@
 # copy the code into a new notebook in google colab
 
 
+!pip install pyspark
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import to_date, col, avg
 spark = SparkSession.builder.appName('Task9').getOrCreate()
-df = spark.read.csv('/content/employees.csv', header=True, inferSchema=True)
+df = spark.read.csv('/content/employees.csv', header=True, inferSchema = True)
 df.show()
-df.count()
-from pyspark.sql.functions import to_date, col
+rdd = df.rdd
+rdd.collect()
+rdd.count()
+df1 = df.withColumn('DOD', to_date(col('HIRE_DATE'), 'dd-MMM-yy'))
+df1_filterd = df1.filter(col('DOD') > '2014-12-31')
+rdd_filterd = df1_filterd.rdd
+rdd_filterd.collect()
+names_df = rdd.map(lambda x: (x['FIRST_NAME'], x['LAST_NAME']))
+names_df.collect()
+avg_sal = (rdd.map(lambda x: (x['DEPARTMENT_ID'], (x['SALARY'], 1)))
+    .reduceByKey(lambda a, b : (a[0]+b[0], a[1]+b[1]))
+    .mapValues(lambda x: x[0]/x[1]))
 
-# Convert the 'HIRE_DATE' column to a date type
-df1 = df.withColumn('DOD', to_date('HIRE_DATE', 'dd-MMM-yy'))
-df1.show()
-# Filter out employees who joined after 2014
-df_filtered = df_date.filter(col('DOD') < '2015-01-01')
-
-# Show the filtered DataFrame
-df_filtered.show()
-df1.filter(col('DOD') > '2007-06-21').show()
-employee_names_RDD = RDD13.map(lambda x: x[0])
-print(employee_names_RDD.collect())
-from pyspark.sql.functions import col
-
-# Select the 'FIRST_NAME' and 'LAST_NAME' columns to get employee names
-employee_names_df = df.select(col("FIRST_NAME"), col("LAST_NAME"))
-
-# Show the DataFrame with employee names
-employee_names_df.show()
-from pyspark.sql.functions import avg
-
-# Group by 'DEPARTMENT_ID' and calculate the average salary
-avg_salary_by_department = df.groupBy("DEPARTMENT_ID").agg(avg("SALARY").alias("average_salary"))
-
-# Show the result
-avg_salary_by_department.show()
+avg_sal.collect()
