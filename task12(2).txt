@@ -1,0 +1,40 @@
+from pyspark.sql import SparkSession
+from pyspark.ml.feature import StringIndexer, VectorAssembler
+from pyspark.ml.classification import DecisionTreeClassifier
+spark = SparkSession.builder.appName("ID3-DecisionTree").getOrCreate()
+data = [
+    ("Sunny", "High", "Weak", "No"),
+    ("Sunny", "High", "Strong", "No"),
+    ("Overcast", "High", "Weak", "Yes"),
+    ("Rain", "High", "Weak", "Yes"),
+    ("Rain", "Normal", "Weak", "Yes"),
+    ("Rain", "Normal", "Strong", "No"),
+    ("Overcast", "Normal", "Strong", "Yes"),
+    ("Sunny", "High", "Weak", "No"),
+    ("Sunny", "Normal", "Weak", "Yes"),
+    ("Rain", "Normal", "Weak", "Yes")
+]
+columns = ["Outlook", "Humidity", "Wind", "PlayTennis"]
+df = spark.createDataFrame(data, columns)
+indexers = [StringIndexer(inputCol=col, outputCol=col+"_Idx").fit(df)
+            for col in ["Outlook", "Humidity", "Wind", "PlayTennis"]]
+for i in indexers:
+    df = i.transform(df)
+assembler = VectorAssembler(
+    inputCols=["Outlook_Idx", "Humidity_Idx", "Wind_Idx"],
+    outputCol="features"
+)
+final = assembler.transform(df).select("features", "PlayTennis_Idx")
+dt = DecisionTreeClassifier(labelCol="PlayTennis_Idx", featuresCol="features", impurity="entropy")
+model = dt.fit(final)
+print("\nDecision Tree Model:")
+print(model.toDebugString)
+new = spark.createDataFrame([("Sunny", "High", "Strong")],
+                            ["Outlook", "Humidity", "Wind"])
+for i in indexers[:-1]:
+    new = i.transform(new)
+new = assembler.transform(new).select("features")
+prediction = model.transform(new)
+print("\nPrediction for New Sample:")
+prediction.show()
+spark.stop()
